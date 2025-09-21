@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compliment Generator</title>
+
+    <!-- Google Fonts: Nunito for compliments, Lato for UI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Nunito:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- Embedded CSS -->
+    <style>
+        /* Basic CSS Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Defining CSS variables for the color palette */
+        :root {
+            --primary-text-color: #212529;
+            --primary-accent-color: #FF6B6B; /* Living Coral */
+            --secondary-accent-color: #FFD166; /* Sunny Yellow */
+            --card-background: rgba(255, 255, 255, 0.85); /* Slightly more opaque for readability */
+            --gradient-start: #f8cdda;
+            --gradient-end: #bce3f2;
+        }
+
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            color: var(--primary-text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+            background: linear-gradient(-45deg, var(--gradient-start), var(--gradient-end), #FFD166, #FF6B6B);
+            background-size: 400% 400%;
+            animation: gradient-animation 18s ease infinite;
+            overflow: hidden; /* Hide scrollbars caused by canvas */
+        }
+
+        /* Canvas for the particle animation */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* The main container to hold the card */
+        .container {
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* The main card container */
+        .compliment-card {
+            background-color: var(--card-background);
+            backdrop-filter: blur(12px); /* Stronger blur for glass effect */
+            padding: 2.5rem;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 35px rgba(31, 38, 135, 0.25);
+            text-align: center;
+            max-width: 400px; /* Narrower for a more vertical feel */
+            width: 100%;
+            animation: fade-in 1s ease-out;
+        }
+
+        /* The paragraph element that displays the compliment */
+        #compliment-text {
+            font-family: 'Nunito', sans-serif;
+            font-size: 1.7rem;
+            font-weight: 600;
+            min-height: 220px; /* Increased height to prevent resizing */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            line-height: 1.7;
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+        }
+
+        /* Animation class for the text */
+        #compliment-text.fade {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        /* The button for generating a new compliment */
+        #new-compliment-btn {
+            font-family: 'Lato', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            background-color: var(--primary-accent-color);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: inline-flex; /* Use inline-flex for alignment */
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem; /* Space between icon and text */
+        }
+
+        #new-compliment-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+            transition: fill 0.3s ease;
+        }
+
+        /* Hover state for the button */
+        #new-compliment-btn:hover {
+            background-color: var(--secondary-accent-color);
+            color: var(--primary-text-color);
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        #new-compliment-btn:hover svg {
+            fill: var(--primary-text-color);
+        }
+
+        /* Active state for the button (when clicked) */
+        #new-compliment-btn:active {
+            transform: translateY(-1px) scale(1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        /* Media query for mobile devices */
+        @media (max-width: 480px) {
+            .compliment-card {
+                padding: 2rem 1.5rem;
+            }
+            #compliment-text {
+                font-size: 1.4rem;
+                min-height: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+    <canvas id="particle-canvas"></canvas>
+
+    <main class="container">
+        <!-- The card that holds the content -->
+        <div class="compliment-card">
+            <!-- The area where the compliment text will be displayed -->
+            <p id="compliment-text">You are an amazing person!</p>
+            <!-- The button to generate a new compliment -->
+            <button id="new-compliment-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2.62l1.38 4.26h4.48l-3.62 2.64 1.38 4.26L12 11.16l-3.62 2.62 1.38-4.26L6.14 6.88h4.48L12 2.62zM12 6.13L10.97 9.4h-3.4l2.75 2 1.05 3.23-2.75-2-2.75 2 1.05-3.23-2.75-2h3.4L12 6.13zm0-3.51a.75.75 0 01.65.41l3.45 10.65a.75.75 0 01-1.4.45L14.25 12h-4.5l-1.4 4.35a.75.75 0 01-1.4-.45L11.35 2.62a.75.75 0 01.65-.41z"/></svg>
+                <span>Get a New Compliment</span>
+            </button>
+        </div>
+    </main>
+
+    <!-- Embedded JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const complimentTextElement = document.getElementById('compliment-text');
+            const newComplimentBtn = document.getElementById('new-compliment-btn');
+            
+            // --- Particle Canvas Animation ---
+            const canvas = document.getElementById('particle-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            let particlesArray;
+
+            const particleCount = 100;
+            const mouse = { x: null, y: null, radius: (canvas.height / 120) * (canvas.width / 120) };
+            
+            class Particle {
+                constructor(x, y, directionX, directionY, size, color) {
+                    this.x = x;
+                    this.y = y;
+                    this.directionX = directionX;
+                    this.directionY = directionY;
+                    this.size = size;
+                    this.color = color;
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                }
+                update() {
+                    if (this.x > canvas.width || this.x < 0) { this.directionX = -this.directionX; }
+                    if (this.y > canvas.height || this.y < 0) { this.directionY = -this.directionY; }
+                    this.x += this.directionX;
+                    this.y += this.directionY;
+                    this.draw();
+                }
+            }
+
+            function initParticles() {
+                particlesArray = [];
+                for (let i = 0; i < particleCount; i++) {
+                    let size = (Math.random() * 2) + 1;
+                    let x = (Math.random() * ((innerWidth - size * 2) - (size * 2)) + size * 2);
+                    let y = (Math.random() * ((innerHeight - size * 2) - (size * 2)) + size * 2);
+                    let directionX = (Math.random() * .4) - .2;
+                    let directionY = (Math.random() * .4) - .2;
+                    let color = 'rgba(255, 255, 255, 0.5)';
+                    particlesArray.push(new Particle(x, y, directionX, directionY, size, color));
+                }
+            }
+
+            function animateParticles() {
+                requestAnimationFrame(animateParticles);
+                ctx.clearRect(0, 0, innerWidth, innerHeight);
+                for (let i = 0; i < particlesArray.length; i++) {
+                    particlesArray[i].update();
+                }
+            }
+
+            window.addEventListener('resize', () => {
+                canvas.width = innerWidth;
+                canvas.height = innerHeight;
+                mouse.radius = (canvas.height / 120) * (canvas.width / 120);
+                initParticles();
+            });
+            
+            initParticles();
+            animateParticles();
+
+
+            // --- Compliment Generator Logic ---
+            const compliments = [
+                "You're an awesome friend.", "You're a gift to those around you.", "You're a smart cookie.",
+                "You are awesome!", "You have impeccable manners.", "I like your style.", "You have the best laugh.",
+                "I appreciate you.", "You are the most perfect you there is.", "You're strong.",
+                "Your perspective is refreshing.", "You're an inspiration.", "You're making a difference.",
+                "You're a great listener.", "You are ridiculously good-looking.", "Your kindness is a balm to all who encounter it.",
+                "You're more helpful than you realize.", "You have a great sense of humor.", "You're all that and a super-size bag of chips.",
+                "On a scale from 1 to 10, you're an 11.", "You are brave.", "You're a true gift to the people in your life.",
+                "You're wonderful.", "You're better than a triple-scoop ice cream cone. With sprinkles.",
+                "You're one of a kind.", "If you were a box of crayons, you'd be the giant name-brand one with the built-in sharpener.",
+                "You should be proud of yourself.", "You're more fun than a ball pit filled with puppies.", "You're killing it.",
+                "You're doing a great job.", "You're like a breath of fresh air.", "You're someone's reason to smile.",
+                "You're a candle in the darkness.", "You're a ray of sunshine on a cloudy day.", "You bring out the best in other people.",
+                "Your ability to recall random factoids at just the right time is impressive.", "You're a genius.",
+                "You're as sweet as a can of soda.", "The people you love are lucky to have you in their lives.",
+                "You're like a sunset on the beach: beautiful and inspiring.", "You're more fun than bubble wrap.",
+                "You deserve a hug right now.", "You are making a difference.", "You're a great example to others.",
+                "You've got all the right moves!", "You're a perfect mix of weird and wonderful.", "You're even better than a unicorn, because you're real.",
+                "Your creative potential seems limitless.", "Your positive energy is infectious.", "You're the reason someone is smiling today.",
+                "You are sunshine mixed with a little hurricane.", "You have a heart of gold.", "You are more than enough.",
+                "Even robots think you are smart.", "You could survive a zombie apocalypse.", "You're the human version of a golden retriever.",
+                "Your hair looks great today.", "I bet you do the crossword puzzle in ink.", "You're cooler than the other side of the pillow.",
+                "You make my heart smile.", "You're a clever one.", "If cartoon bluebirds were real, a bunch of them would be sitting on your shoulders singing right now.",
+                "You're the sprinkles on the cupcake of life.", "You're the avocado to my toast.", "You're a star.",
+                "You have a contagious laugh.", "You're a wizard with that!", "You're my favorite person to procrastinate with.",
+                "You could make a grumpy cat smile.", "You're not lazy, you're in energy-saving mode.", "I bet you're the person who remembers to water the plants.",
+                "You're a true original.", "You are beautiful on the inside and outside.", "You light up the room.",
+                "Your kindness is a superpower.", "You're a treasure.", "Being around you is like a happy little vacation.",
+                "You're a smarty-pants.", "You're a champion.", "You're a problem-solver.", "You are so thoughtful.",
+                "You have a great taste in... well, everything!", "You're the best.", "You have a natural talent for making people feel comfortable.",
+                "You're the reason the aliens won't attack us.", "You're like a four-leaf clover: rare and lucky to find.",
+                "I bet you could teach a dog how to read.", "You're the GOAT (Greatest of All Time).", "You're a masterpiece.",
+                "You have the courage of a lion.", "You're a joy to be around.", "You have a great sense of direction, even in life.",
+                "You are the creator of your own destiny.", "You have a knack for finding the silver lining.", "You're unforgettable.",
+                "Your smile is contagious."
+            ];
+
+            const emojis = ['✨', '😊', '🎉', '💖', '🌟', '👍', '🥳', '🤩', '💫', '💯'];
+
+            function generateNewCompliment() {
+                const randomIndex = Math.floor(Math.random() * compliments.length);
+                const randomEmojiIndex = Math.floor(Math.random() * emojis.length);
+                const randomCompliment = compliments[randomIndex];
+                const randomEmoji = emojis[randomEmojiIndex];
+
+                complimentTextElement.classList.add('fade');
+
+                setTimeout(() => {
+                    complimentTextElement.textContent = `${randomEmoji} ${randomCompliment}`;
+                    complimentTextElement.classList.remove('fade');
+                }, 400); 
+            }
+
+            newComplimentBtn.addEventListener('click', generateNewCompliment);
+            generateNewCompliment(); 
+        });
+    </script>
+
+</body>
+</html>
+
