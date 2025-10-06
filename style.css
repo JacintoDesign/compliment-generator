@@ -1,0 +1,259 @@
+/* Basic CSS Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Defining CSS variables for the color palette */
+:root {
+  --primary-text-color: #212529;
+  --compliment-btn-color: #ff6b6b; /* Living Coral */
+  --joke-btn-color: #4ecdc4; /* Medium Turquoise */
+  --hover-color: #ffd166; /* Sunny Yellow */
+  --card-background: rgba(255, 255, 255, 0.85);
+  --gradient-start: #f8cdda;
+  --gradient-end: #bce3f2;
+  /* Variables for interactive spotlight */
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+}
+
+@keyframes gradient-animation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes spotlight-drift {
+  0% {
+    --mouse-x: 0%;
+    --mouse-y: 0%;
+  }
+  25% {
+    --mouse-x: 100%;
+    --mouse-y: 0%;
+  }
+  50% {
+    --mouse-x: 100%;
+    --mouse-y: 100%;
+  }
+  75% {
+    --mouse-x: 0%;
+    --mouse-y: 100%;
+  }
+  100% {
+    --mouse-x: 0%;
+    --mouse-y: 0%;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes punchline-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+body {
+  font-family: 'Lato', sans-serif;
+  color: var(--primary-text-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 1rem;
+  background: linear-gradient(
+    -45deg,
+    var(--gradient-start),
+    var(--gradient-end),
+    #ffd166,
+    #4ecdc4
+  );
+  background-size: 400% 400%;
+  animation: gradient-animation 18s ease infinite;
+  overflow: hidden;
+  position: relative; /* Needed for pseudo-element positioning */
+}
+
+/* New spotlight effect using a pseudo-element */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at var(--mouse-x) var(--mouse-y),
+    rgba(255, 255, 255, 0.3) 0%,
+    transparent 30%
+  );
+  z-index: 0;
+  transition: background 0.1s linear;
+}
+
+/* Fallback animation for touch devices or when mouse is idle */
+@media (hover: none) {
+  body::before {
+    animation: spotlight-drift 25s linear infinite;
+  }
+}
+
+/* The main container for card and buttons */
+.container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  animation: fade-in 1s ease-out;
+}
+
+/* The playing card container */
+.playing-card {
+  background-color: var(--card-background);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 10px 35px rgba(31, 38, 135, 0.25);
+  text-align: center;
+  width: 350px; /* Fixed width based on playing card ratio */
+  height: 490px; /* Fixed height based on playing card ratio */
+  border-radius: 24px;
+  position: relative;
+  padding: 3rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Corner icon styles */
+.corner-icon {
+  position: absolute;
+  width: 60px; /* Made smaller */
+  height: 60px; /* Made smaller */
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem; /* Adjusted for new size */
+  transition: background-color 0.5s ease;
+}
+.corner-icon.top-right {
+  top: 15px; /* Positioned inside */
+  right: 15px; /* Positioned inside */
+}
+.corner-icon.bottom-left {
+  bottom: 15px; /* Positioned inside */
+  left: 15px; /* Positioned inside */
+}
+
+/* The text display area */
+#display-text-area {
+  font-family: 'Nunito', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  line-height: 1.6;
+  transition: opacity 0.4s ease-in-out;
+}
+#punchline {
+  display: block;
+  margin-top: 1rem;
+  opacity: 0;
+  font-weight: 400;
+}
+#punchline.visible {
+  animation: punchline-reveal 0.5s ease forwards;
+}
+
+/* Container for the buttons below the card */
+.button-container {
+  display: flex;
+  gap: 1rem;
+}
+
+/* General button styles */
+.action-btn {
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.6rem;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease,
+    box-shadow 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+#new-compliment-btn {
+  background-color: var(--compliment-btn-color);
+}
+#new-joke-btn {
+  background-color: var(--joke-btn-color);
+}
+
+.action-btn:hover {
+  background-color: var(--hover-color);
+  color: var(--primary-text-color);
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+.action-btn:active {
+  transform: translateY(-1px) scale(1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 480px) {
+  .playing-card {
+    width: 90vw;
+    height: 126vw; /* Maintain aspect ratio */
+    padding: 2rem;
+  }
+  #display-text-area {
+    font-size: 1.5rem;
+  }
+  .corner-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.8rem;
+  }
+  .corner-icon.top-right {
+    top: 10px;
+    right: 10px;
+  }
+  .corner-icon.bottom-left {
+    bottom: 10px;
+    left: 10px;
+  }
+  .button-container {
+    flex-direction: column;
+    width: 100%;
+  }
+  .action-btn {
+    width: 100%;
+  }
+}
