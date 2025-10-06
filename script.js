@@ -166,17 +166,42 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCardStyle();
   }
 
+  // Keep track of any active punchline timeout so we can cancel if user clicks again quickly
+  let punchlineTimeoutId = null;
+
+  function resetRevealState() {
+    // Remove classes and content for a clean state
+    document.getElementById('display-text-area').classList.remove('has-punchline');
+    punchlineElement.classList.remove('visible');
+    punchlineElement.textContent = '';
+  }
+
   function generateNewJoke() {
     const randomJoke = jokes[Math.floor(Math.random() * jokes.length)];
+
+    // Cancel any pending punchline reveal
+    if (punchlineTimeoutId) {
+      clearTimeout(punchlineTimeoutId);
+      punchlineTimeoutId = null;
+    }
+
+    // Prepare setup text and reset state
+    resetRevealState();
+    mainTextElement.style.opacity = '1';
+    mainTextElement.style.transform = 'translateY(0)';
     mainTextElement.textContent = randomJoke.setup;
-    punchlineElement.textContent = '';
-    punchlineElement.classList.remove('visible');
     updateCardStyle();
 
-    setTimeout(() => {
+    // Reveal punchline with smooth fade-in and lift; also nudge setup upwards
+    punchlineTimeoutId = setTimeout(() => {
+      document.getElementById('display-text-area').classList.add('has-punchline');
       punchlineElement.textContent = randomJoke.punchline;
+      // Force reflow to ensure animation triggers even if same class is reused
+      // eslint-disable-next-line no-unused-expressions
+      punchlineElement.offsetHeight;
       punchlineElement.classList.add('visible');
-    }, 2500); // 2.5 second delay for the punchline
+      punchlineTimeoutId = null;
+    }, 1200); // shorter delay to feel snappier with smoother animation
   }
 
   // Event Listeners
