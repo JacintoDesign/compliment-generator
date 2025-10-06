@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const newJokeBtn = document.getElementById('new-joke-btn');
   const cornerTop = document.getElementById('corner-top');
   const cornerBottom = document.getElementById('corner-bottom');
+  const displayTextArea = document.getElementById('display-text-area');
 
   // Data Arrays
   const compliments = [
@@ -158,11 +159,75 @@ document.addEventListener('DOMContentLoaded', () => {
     cornerBottom.textContent = randomEmoji;
   }
 
+  // ---------- Non-repeating rotation helpers ----------
+  const normalizeText = (s) => s.replace(/\s+/g, ' ').trim().toLowerCase();
+  const shuffle = (arr) => {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  };
+
+  // Build unique compliments (preserve first occurrence)
+  const uniqueCompliments = Array.from(
+    new Map(compliments.map((c) => [normalizeText(c), c])).values()
+  );
+
+  // Build unique jokes (dedupe by setup+punchline key)
+  const jokeKey = (j) => `${normalizeText(j.setup)}|${normalizeText(j.punchline)}`;
+  const uniqueJokes = Array.from(
+    new Map(jokes.map((j) => [jokeKey(j), j])).values()
+  );
+
+  let complimentQueue = [];
+  let jokeQueue = [];
+  let lastComplimentKey = null;
+  let lastJokeKey = null;
+
+  function refillComplimentQueue() {
+    complimentQueue = shuffle([...uniqueCompliments]);
+    if (
+      lastComplimentKey &&
+      complimentQueue.length > 1 &&
+      normalizeText(complimentQueue[0]) === lastComplimentKey
+    ) {
+      // Avoid immediate repeat across cycles
+      [complimentQueue[0], complimentQueue[1]] = [complimentQueue[1], complimentQueue[0]];
+    }
+  }
+
+  function nextCompliment() {
+    if (complimentQueue.length === 0) refillComplimentQueue();
+    const c = complimentQueue.shift();
+    lastComplimentKey = normalizeText(c);
+    return c;
+  }
+
+  function refillJokeQueue() {
+    jokeQueue = shuffle([...uniqueJokes]);
+    if (
+      lastJokeKey &&
+      jokeQueue.length > 1 &&
+      jokeKey(jokeQueue[0]) === lastJokeKey
+    ) {
+      // Avoid immediate repeat across cycles
+      [jokeQueue[0], jokeQueue[1]] = [jokeQueue[1], jokeQueue[0]];
+    }
+  }
+
+  function nextJoke() {
+    if (jokeQueue.length === 0) refillJokeQueue();
+    const j = jokeQueue.shift();
+    lastJokeKey = jokeKey(j);
+    return j;
+  }
+
   function generateNewCompliment() {
-    const randomCompliment = compliments[Math.floor(Math.random() * compliments.length)];
-    mainTextElement.textContent = randomCompliment;
-    punchlineElement.textContent = '';
-    punchlineElement.classList.remove('visible');
+    // Reset any joke reveal state and set new compliment without repeats
+    resetRevealState();
+    const compliment = nextCompliment();
+    mainTextElement.textContent = compliment;
     updateCardStyle();
   }
 
@@ -171,13 +236,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function resetRevealState() {
     // Remove classes and content for a clean state
-    document.getElementById('display-text-area').classList.remove('has-punchline');
+    displayTextArea.classList.remove('has-punchline');
     punchlineElement.classList.remove('visible');
     punchlineElement.textContent = '';
   }
 
   function generateNewJoke() {
-    const randomJoke = jokes[Math.floor(Math.random() * jokes.length)];
+    const joke = nextJoke();
 
     // Cancel any pending punchline reveal
     if (punchlineTimeoutId) {
@@ -189,13 +254,13 @@ document.addEventListener('DOMContentLoaded', () => {
     resetRevealState();
     mainTextElement.style.opacity = '1';
     mainTextElement.style.transform = 'translateY(0)';
-    mainTextElement.textContent = randomJoke.setup;
+    mainTextElement.textContent = joke.setup;
     updateCardStyle();
 
     // Reveal punchline with smooth fade-in and lift; also nudge setup upwards
     punchlineTimeoutId = setTimeout(() => {
-      document.getElementById('display-text-area').classList.add('has-punchline');
-      punchlineElement.textContent = randomJoke.punchline;
+      displayTextArea.classList.add('has-punchline');
+      punchlineElement.textContent = joke.punchline;
       // Force reflow to ensure animation triggers even if same class is reused
       // eslint-disable-next-line no-unused-expressions
       punchlineElement.offsetHeight;
